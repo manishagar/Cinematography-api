@@ -1,0 +1,3 @@
+com.cinematography.web.client.CinematographyHttpClientAutoConfiguration
+com.cinematography.web.autoconfigure.CinematographyWebAutoConfiguration
+com.cinematography.web.async.CinematographyAsyncAutoConfiguration

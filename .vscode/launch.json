@@ -1,0 +1,37 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "PasswordUtil",
+            "request": "launch",
+            "mainClass": "com.cinematography.adminapi.cinematography.util.PasswordUtil",
+            "projectName": "admin-api"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ServiceRegistryApplication<service-registry>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.cinematography.registry.ServiceRegistryApplication",
+            "projectName": "service-registry",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env",
+            "noDebug": false,
+            "__progressId": "4fed6b31-7ed6-43f0-95dd-f5fdbd19e8e4",
+            "__origin": "internal"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-AdminApiApplication<admin-api>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.cinematography.adminapi.AdminApiApplication",
+            "projectName": "admin-api",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env",
+            "noDebug": false,
+            "__progressId": "058c7f6b-ccac-46da-bf70-6408e7ac13b1",
+            "__origin": "internal"
+        }
+    ]
+}

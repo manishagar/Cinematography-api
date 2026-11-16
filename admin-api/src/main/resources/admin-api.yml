@@ -1,0 +1,114 @@
+# Core Spring Boot configuration and runtime behavior
+spring:
+  profiles:
+    active: dv
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: manishag2006
+    password: Aruvarsha@1993
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  devtools:
+    add-properties: true  # Enable dynamic property updates in development
+
+  application:
+    name: admin-api  # Service identifier for logs, metrics, and tracing
+
+  config:
+    import:
+      - "classpath:${spring.application.name}-${spring.profiles.active}.yml"
+      # Load environment-specific overrides at startup
+
+  banner:
+    location: classpath:/banner.txt  # Startup banner for service identification
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+      # Upload size limits to protect memory and disk usage
+
+  web:
+    resources:
+      add-mappings: false  # Disable static resource auto-mapping for API-only service
+
+# OpenAPI contract exposure for consumers and tooling
+springdoc:
+  api-docs:
+    path: /auth/users/v3/api-docs  # OpenAPI JSON endpoint
+
+  swagger-ui:
+    enabled: false  # Disabled in production for security
+
+# Observability configuration (logging-focused tracing)
+management:
+  tracing:
+    enabled: true
+    propagation:
+      type: w3c
+    sampling:
+      probability: 1.0  # Full trace sampling for log correlation
+
+  observations:
+    key-values:
+      application: ${spring.application.name}  # Inject service name into spans/logs
+
+  metrics:
+    export:
+      prometheus:
+        enabled: false  # Enable only when Prometheus scraping is configured
+
+# HTTP client pooling and timeout safeguards
+http:
+  client:
+    max-total: 200
+    max-per-route: 50
+    connect-timeout-ms: 5000
+    response-timeout-ms: 15000
+    connection-request-timeout-ms: 5000
+    evict-idle-minutes: 1
+    # Prevent connection exhaustion and latency spikes
+
+# File upload configuration for contract storage
+file:
+  upload:
+    base-dir: C:/dev/dsg-uploads/contracts
+    max-file-size: 10MB
+    max-files: 2
+    # File system limits and storage location
+
+# Centralized logging with trace and span correlation
+logging:
+  file:
+    name: ${LOG_DIR:./logs}/${spring.application.name}.log
+    max-size: 10MB
+    max-history: 10
+    # Log rotation strategy for disk protection
+
+  level:
+    root: INFO
+    "[com.netflix.discovery.DiscoveryClient]": ERROR
+    "[org.springframework.jdbc.core.JdbcTemplate]": WARN
+    "[com.cinematography.adminapi]": INFO
+    # Package-level log noise control
+
+  pattern:
+    file: >
+      %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level
+      [${spring.application.name},
+      traceId=%X{traceId},
+      spanId=%X{spanId},
+      parentSpanId=%X{parentSpanId}]
+      %m%n
+    # Structured logging for distributed trace correlation

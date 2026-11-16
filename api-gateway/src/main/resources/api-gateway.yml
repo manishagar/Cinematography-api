@@ -1,0 +1,135 @@
+# Core Spring Boot configuration and runtime behavior
+spring:
+  profiles:
+    active: dv  # Active runtime profile (dv | qa | pp | pd)
+
+  devtools:
+    add-properties: true  # Enable dynamic property updates in development
+
+  application:
+    name: api-gateway  # Logical service identifier used for logs, metrics, and tracing
+
+  config:
+    import:
+      - "classpath:${spring.application.name}-${spring.profiles.active}.yml"
+      # Loads environment-specific configuration at startup
+
+  main:
+    web-application-type: reactive
+    # Enables reactive stack for gateway routing and I/O
+
+  banner:
+    location: classpath:/banner.txt  # Service startup identification banner
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+
+          forwarded:
+            enabled: true
+            # Honor X-Forwarded-* headers when running behind proxies or load balancers
+
+          httpclient:
+            ssl:
+              use-insecure-trust-manager: true
+              # Allows gateway to trust downstream services with non-public certificates
+
+          discovery:
+            locator:
+              enabled: true
+              # Enables dynamic routing based on Eureka service discovery
+
+  http:
+    codecs:
+      max-in-memory-size: 10MB
+      # Limits WebFlux in-memory buffering for request/response payloads
+
+  webflux:
+    multipart:
+      max-in-memory-size: 10MB
+      # Controls buffering limits for multipart uploads
+
+  security:
+    paths:
+      admin:
+        pattern: /admin/users/admin/**
+        login: /admin/users/admin/login
+
+      swagger:
+        - /admin/users/v3/api-docs
+        - /v3/api-docs/**
+
+      eureka: /eureka
+      # Paths exempted from gateway security filters
+
+# Exact admin endpoints that are allowed without a JWT.
+cinematography:
+  gateway:
+    security:
+      public-admin-paths:
+        - /admin/users/admin/login
+        - /admin/users/admin/forgot-password
+        - /admin/users/admin/reset-password
+
+# External GUI access configuration
+api:
+  gui:
+    baseUrlUI: "https://desktop-s31r7k7,https://10.201.135.151"
+    # Allowed UI origins for browser-based access
+
+# Application observability: health, metrics, and distributed tracing
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+        # Explicitly exposed Actuator endpoints
+
+  tracing:
+    enabled: true
+    propagation:
+      type: w3c
+    sampling:
+      probability: 1.0
+      # Full trace sampling (reduce in high-traffic prod systems)
+
+  observations:
+    key-values:
+      application: ${spring.application.name}
+      # Service name injected into trace context
+
+  prometheus:
+    metrics:
+      export:
+        enabled: false
+        # Enable only when Prometheus scraping is configured
+
+# Centralized logging configuration with trace correlation support
+logging:
+  file:
+    name: ${LOG_DIR:./logs}/${spring.application.name}.log
+
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 10
+      # Log file rotation strategy for disk protection
+
+  level:
+    root: INFO
+    "[org.springframework.cloud.gateway]": INFO
+    "[reactor.netty.http.client]": INFO
+    "[com.netflix.discovery]": ERROR
+    "[org.springframework.cloud.netflix.eureka]": ERROR
+    # Package-level log tuning to reduce noise and cost
+
+  pattern:
+    file: >
+      %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level
+      [${spring.application.name},
+      traceId=%X{traceId},
+      spanId=%X{spanId},
+      parentSpanId=%X{parentSpanId}]
+      %m%n
+    # Structured logging pattern for distributed trace correlation

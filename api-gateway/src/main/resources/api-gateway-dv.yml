@@ -1,0 +1,35 @@
+# Server networking, TLS termination, and embedded container configuration
+server:
+  port: 8443  # HTTPS listener port for the service
+
+  ssl:
+    enabled: true
+    key-store: file:D:/dev/cinematography-config/cinematography-all.p12
+    key-store-password: CineApis@2026
+    key-store-type: pkcs12
+    key-alias: cinematography-all
+    key-password: CineApis@2026
+    # TLS configuration for encrypted client communication
+
+# Application-level security configuration
+microservice:
+  security:
+    jwt:
+      secret-key:  eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJWaW5heWFrIENpbmVtYXRvZ3JhcGh5IiwiaWF0IjoxNzkzNzk2MjAzLCJleHAiOjE4NTY5NTQ2MDMsImF1ZCI6IiIsInN1YiI6IiJ9.21r5qTrJkUuHb4-Q-0eFgoRWSJzqr20b3jl7fXE0aE4
+      expiration-time: 3600000
+      # JWT signing secret (must be externalized in secure stores for production)
+
+# Service discovery and registration configuration
+eureka:
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+    ip-address: 192.168.0.104
+    securePortEnabled: true
+    nonSecurePortEnabled: false
+    # Instance identity and secure registration settings
+
+  client:
+    serviceUrl:
+      defaultZone: http://${eureka.instance.hostname}:8761/eureka/
+      # Eureka server endpoint for service registration

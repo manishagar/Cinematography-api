@@ -1,0 +1,13 @@
+target/
+*.log
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.env
+application-local.yml
+application-local.properties
+*.jks
+*.p12
+uploads/

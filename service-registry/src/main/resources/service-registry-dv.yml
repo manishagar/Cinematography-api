@@ -1,0 +1,35 @@
+# Server networking configuration for Eureka registry
+server:
+  port: 8761  # HTTP listener port for Eureka dashboard and registry API
+
+# Uncomment to enable HTTPS for Eureka server
+#  address: 0.0.0.0  # Listen on all network interfaces
+#
+#  ssl:
+#    enabled: true
+#    key-store: file:C:/dev/dsg-config/dsg-apis-all.p12
+#    key-store-password: Dsgapis@2024
+#    key-store-type: pkcs12
+#    key-alias: dsg-apis-all
+#    key-password: Dsgapis@2024
+#    # TLS configuration for encrypted client communication
+
+# Service discovery server configuration
+eureka:
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+    # Registry instance identity
+
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    # Disabled because this application is the Eureka server itself
+
+    serviceUrl:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+      # Self-referencing registry endpoint
+
+  server:
+    enable-self-preservation: false
+    # Disabled to immediately evict unhealthy instances in non-production environments

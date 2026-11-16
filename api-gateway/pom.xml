@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    Inherit dependency & plugin management from the parent.
+    All versions (Spring Boot/Cloud, Springdoc, etc.) are centrally managed there.
+  -->
+  <parent>
+   <groupId>com.cinematography</groupId>
+        <artifactId>cinematography</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+  
+
+  <!-- Module coordinates -->
+  <groupId>com.cinematography.gateway</groupId>
+  <artifactId>api-gateway</artifactId>
+  <name>API-GATEWAY</name>
+  <description>API Gateway for routing and access control across DSG APIs</description>
+  <packaging>jar</packaging>
+
+	  <!--
+		Gateway is reactive (Reactor Netty). We do NOT add Servlet stack (no spring-boot-starter-web).
+		We also do NOT add Apache HttpClient; Gateway uses Netty (from spring-cloud-starter-gateway).
+	  -->
+	  <dependencies>
+
+	    <dependency>
+            <groupId>com.cinematography</groupId>
+            <artifactId>cinematography-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+		<!-- OpenAPI JSON generation only; Swagger UI intentionally excluded in production -->
+		<!-- Use webflux variant — api-gateway is a reactive WebFlux app, not servlet/MVC -->
+		<dependency>
+		  <groupId>org.springdoc</groupId>
+		  <artifactId>springdoc-openapi-starter-webflux-api</artifactId>
+		</dependency>
+		<!-- Reactive Web (WebFlux) -->
+		<dependency>
+		  <groupId>org.springframework.boot</groupId>
+		  <artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
+		<!-- Spring Cloud Gateway (reactive API gateway on Reactor Netty) -->
+		<dependency>
+		  <groupId>org.springframework.cloud</groupId>
+		  <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
+		</dependency>
+
+		<!-- Client-side load balancing (used by Gateway for downstream calls) -->
+		<dependency>
+		  <groupId>org.springframework.cloud</groupId>
+		  <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+		</dependency>
+
+		<!-- (Optional) If you expose actuator on the gateway for health/metrics:
+		<dependency>
+		  <groupId>org.springframework.boot</groupId>
+		  <artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		-->
+
+		<!-- Lombok (recommended for entities + DTOs) -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<scope>provided</scope>
+		</dependency>
+	  </dependencies>
+
+	  <build>
+		<finalName>${project.artifactId}</finalName>
+		<plugins>
+		  <!-- Spring Boot plugin to build an executable jar for the gateway -->
+		  <plugin>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-maven-plugin</artifactId>
+			<executions>
+			  <execution>
+				<goals>
+				  <goal>repackage</goal>
+				</goals>
+			  </execution>
+			</executions>
+		  </plugin>
+		</plugins>
+	  </build>
+
+	</project>

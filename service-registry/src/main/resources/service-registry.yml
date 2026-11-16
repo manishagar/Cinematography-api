@@ -1,0 +1,74 @@
+# Core Spring Boot configuration and runtime behavior
+spring:
+  profiles:
+    active: dv  # Active runtime profile (dv | qa | pp | pd)
+
+    freemarker:
+     settings:
+      localized_lookup: false
+      # CVE-2026-84939 mitigation. Only strictly needed while FreeMarker < 2.3.35;
+      # harmless afterwards - Eureka's templates are not localized.
+  devtools:
+    add-properties: true  # Enable dynamic property updates in development
+
+  application:
+    name: service-registry  # Logical service identifier used for logs, metrics, and tracing
+
+  config:
+    import:
+      - "classpath:${spring.application.name}-${spring.profiles.active}.yml"
+      # Loads environment-specific configuration at startup
+
+  banner:
+    location: classpath:/banner.txt  # Service startup identification banner
+
+# Application observability: health, metrics, and distributed tracing
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+        # Explicitly exposed Actuator endpoints
+
+  tracing:
+    sampling:
+      probability: 1.0
+      # Full trace sampling (reduce in high-traffic prod systems)
+
+  observations:
+    key-values:
+      application: ${spring.application.name}
+      # Service name injected into trace context
+
+  prometheus:
+    metrics:
+      export:
+        enabled: false
+        # Enable only when Prometheus scraping is configured
+
+# Centralized logging configuration with trace correlation support
+logging:
+  file:
+    name: ${LOG_DIR:./logs}/${spring.application.name}.log
+    # Centralized log file per service instance
+
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 10
+      # Logback-based rotation policy (Spring Boot 3.x compatible)
+
+  level:
+    root: INFO
+    "org.springframework.web": WARN
+    # Package-level log tuning to reduce noise
+
+  pattern:
+    file: >
+      %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level
+      [${spring.application.name},
+      traceId=%X{traceId},
+      spanId=%X{spanId},
+      parentSpanId=%X{parentSpanId}]
+      %m%n
+    # Structured logging pattern for distributed trace correlation

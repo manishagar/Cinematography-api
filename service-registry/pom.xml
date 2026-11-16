@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.cinematography</groupId>
+        <artifactId>cinematography</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <groupId>com.cinematography.registry</groupId>
+    <artifactId>service-registry</artifactId>
+    <name>SERVICE-REGISTRY</name>
+    <description>Eureka Service Registry for all microservice APIs</description>
+    <packaging>jar</packaging>
+
+
+     <dependencies>
+        <!-- Web (Eureka Server requires Spring MVC, not WebFlux) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Bean Validation provider -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+        </dependency>
+
+        <!-- Eureka Server -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Required by Eureka Server internals: jersey-apache-connector and
+		     eureka-client bind to HttpClient 4.x. Version managed in the parent. -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <!-- Scoped exception to the org-wide ban: Eureka Server's replication
+                 client still needs HttpClient 4.x (declared above). Previously this
+                 module set enforcer.skip=true, which disabled EVERY rule. Here we
+                 re-run the rule and relax only the httpclient entry, so
+                 commons-jxpath and commons-configuration 1.x stay banned. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-legacy-deps</id>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <searchTransitive>true</searchTransitive>
+                                    <excludes combine.self="override">
+                                        <exclude>commons-jxpath:commons-jxpath</exclude>
+                                        <exclude>commons-configuration:commons-configuration</exclude>
+                                        <exclude>org.apache.httpcomponents.core5:httpcore5:(,5.4)</exclude>
+                                        <exclude>org.apache.httpcomponents.core5:httpcore5-h2:(,5.4)</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <outputTimestamp>${maven.build.timestamp}</outputTimestamp>
+                    <!-- Eureka registry issues no tokens; jjwt is inherited from the
+			             parent but never used here, so keep it out of the fat jar. -->
+                    <excludeGroupIds>io.jsonwebtoken</excludeGroupIds>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
