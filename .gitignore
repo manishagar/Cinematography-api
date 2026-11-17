@@ -11,3 +11,5 @@ application-local.properties
 *.jks
 *.p12
 uploads/
+.vscode/launch.json
+ .vscode/settings.json

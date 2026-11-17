@@ -8,7 +8,11 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @EnableAspectJAutoProxy
-@SpringBootApplication(scanBasePackages = { "com.cinematography.adminapi", "com.cinematography.cust" })
+@SpringBootApplication(scanBasePackages = {
+		"com.cinematography.adminapi",
+		"com.cinematography.cust",
+		"com.cinematography.notification"
+})
 @EntityScan(basePackages = { "com.cinematography.adminapi", "com.cinematography.cust" })
 @EnableJpaRepositories(basePackages = { "com.cinematography.adminapi", "com.cinematography.cust" })
 @EnableDiscoveryClient
@@ -20,4 +24,3 @@ public class AdminApiApplication {
             .run(args);
 	}
 }
-

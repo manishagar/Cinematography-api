@@ -20,6 +20,12 @@ import com.cinematography.cust.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.time.Instant;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.TaskRejectedException;
+
+import com.cinematography.notification.LoginNotificationService;
 
 @Service
 @Slf4j
@@ -29,6 +35,7 @@ public class AdminService {
 	@Value("${microservice.security.salt}")
 	private String salt;
 	private final JwtService jwtService;
+	private final LoginNotificationService loginNotificationService;
 
 	public String findUsersByUP(String username, String password, HttpServletRequest request) {
 		String encryptPassword = EncryptionService.encrypt(password, salt);
@@ -43,13 +50,10 @@ public class AdminService {
 				serverName = serverName.toLowerCase();
 			}
 			log.info("UsersService ServerName ::::::::::: {} ", serverName);
-			String issuerName = request.getHeader("X-Issuer-Name");
-			log.info("UsersService IssuerName ::::::::::: {} ", issuerName);
-
 			// Base claims
 			Map<String, Object> claims = new HashMap<>();
 			claims.put("typ", "JWT");
-			claims.put("iss", issuerName);
+			claims.put("iss", serverName);
 			claims.put("username", username);
 
 			// Fetch user by username
@@ -71,6 +75,22 @@ public class AdminService {
 						user.setLoginDt(LocalDateTime.now(ZoneId.systemDefault()));
 						adminUserRepository.save(user);
 
+						try {
+							// Use the email saved against the authenticated user.
+							// Do not accept the recipient from the login request.
+							loginNotificationService.sendLoginSuccessEmail(
+									user.getEmail(),
+									username,
+									user.getLoginDt().atZone(ZoneId.systemDefault()).toInstant());
+
+						} catch (TaskRejectedException ex) {
+							// A full email queue must not cause login to fail.
+							log.warn(
+									"Login succeeded but email could not be queued for '{}'",
+									username,
+									ex);
+						}
+
 						// Generate JWT
 						token = jwtService.generateToken(username, claims);
 					}
@@ -89,36 +109,34 @@ public class AdminService {
 		return token;
 	}
 
-
- @Transactional 
+	@Transactional
 	public Optional<AdminUserValue> findByUserDetails(String username) {
-//		Initialize the optional result
+		// Initialize the optional result
 		Optional<AdminUserValue> byUserDetails = Optional.empty();
 
 		try {
-//			Fetch user details from the repository by username
+			// Fetch user details from the repository by username
 			byUserDetails = adminUserRepository.findUsersByUserName(username);
 		} catch (Exception e) {
-//			Log any errors during the query
+			// Log any errors during the query
 			log.error("UsersService findByUserDetails :: {}", e.getMessage());
 		}
 
 		return byUserDetails;
 	}
 
-
 	public boolean isUserLogoutDateUpdate(AdminUserValue user) {
 		boolean isFlag = false;
 
-//		Proceed only if the user is not null
+		// Proceed only if the user is not null
 		if (user != null) {
-//			Set the logout date to the current timestamp
+			// Set the logout date to the current timestamp
 			user.setLogoutDt(LocalDateTime.now(ZoneId.systemDefault()));
 
-//			Save the updated user entity to the database
+			// Save the updated user entity to the database
 			adminUserRepository.save(user);
 
-//			Set success flag to true
+			// Set success flag to true
 			isFlag = true;
 		}
 

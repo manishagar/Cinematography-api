@@ -10,12 +10,12 @@ public interface AdminUserRepository extends JpaRepository<AdminUserValue, Long>
 
      Optional<AdminUserValue> findByUsername(String username);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM AdminUserValue a WHERE a.username = :username")
-    Optional<AdminUserValue> findByAdminIdForUpdate(@Param("username") String username);
+     @Lock(LockModeType.PESSIMISTIC_WRITE)
+     @Query("SELECT a FROM AdminUserValue a WHERE a.username = :username")
+     Optional<AdminUserValue> findByAdminIdForUpdate(@Param("username") String username);
 
-    	@Query(value = "SELECT c FROM AdminUserValue c WHERE c.userId = :userId")
-	Optional<AdminUserValue> findByUserId(@Param("userId") Long userId);
+     @Query(value = "SELECT c FROM AdminUserValue c WHERE c.userId = :userId")
+     Optional<AdminUserValue> findByUserId(@Param("userId") Long userId);
 
      @Query("SELECT c FROM AdminUserValue c WHERE c.username = :username AND c.status = 'ACTIVE'")
 	Optional<AdminUserValue> findUsersByUserName(@Param("username") String username);
