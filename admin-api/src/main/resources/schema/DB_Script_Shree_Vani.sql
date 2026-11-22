@@ -26,3 +26,79 @@ CREATE TABLE [users](
 	[modified_by] [varchar] (50) NULL,
     CONSTRAINT PK_users primary key(user_id))
 GO
+
+-- Run in your application database
+
+IF OBJECT_ID(N'dbo.Banners', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Banners
+    (
+        banner_id BIGINT IDENTITY(1,1)
+            CONSTRAINT PK_Banners PRIMARY KEY,
+
+        banner_type VARCHAR(5) NOT NULL,
+
+        title NVARCHAR(200) NOT NULL,
+
+        subtitle NVARCHAR(1000) NULL,
+
+        alt_text NVARCHAR(250) NULL,
+
+        background_color CHAR(7) NOT NULL,
+
+        text_color CHAR(7) NOT NULL,
+
+        active BIT NOT NULL
+            CONSTRAINT DF_Banners_Active DEFAULT (1),
+
+        starts_at DATETIME2(3) NULL,
+
+        ends_at DATETIME2(3) NULL,
+
+        image_content_type VARCHAR(10) NULL,
+
+        image_bytes VARBINARY(MAX) NULL,
+
+        -- Audit columns
+        created_by BIGINT NOT NULL,
+
+        created_at DATETIME2(3) NOT NULL
+            CONSTRAINT DF_Banners_Created
+            DEFAULT SYSUTCDATETIME(),
+
+        updated_by BIGINT NULL,
+
+        updated_at DATETIME2(3) NULL,
+
+        -- Constraints
+        CONSTRAINT CK_Banners_Type
+            CHECK (banner_type IN ('TEXT', 'IMAGE')),
+
+        CONSTRAINT CK_Banners_Schedule
+            CHECK (
+                starts_at IS NULL
+                OR ends_at IS NULL
+                OR ends_at > starts_at
+            ),
+
+        CONSTRAINT CK_Banners_Image
+            CHECK (
+                (
+                    banner_type = 'TEXT'
+                    AND image_content_type IS NULL
+                    AND image_bytes IS NULL
+                )
+                OR
+                (
+                    banner_type = 'IMAGE'
+                    AND image_content_type IS NOT NULL
+                    AND image_content_type IN
+                        ('image/png', 'image/jpeg')
+                    AND image_bytes IS NOT NULL
+                    AND DATALENGTH(image_bytes)
+                        BETWEEN 1 AND 10485760
+                )
+            )
+    );
+END;
+GO

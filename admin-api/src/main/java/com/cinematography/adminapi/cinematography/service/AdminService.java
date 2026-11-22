@@ -20,9 +20,6 @@ import com.cinematography.cust.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import java.time.Instant;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskRejectedException;
 
 import com.cinematography.notification.LoginNotificationService;
@@ -44,8 +41,12 @@ public class AdminService {
 		Optional<AdminUserValue> findUsersByUP = Optional.empty();
 
 		try {
-			// Normalize issuer/server info
-			String serverName = request.getServerName();
+			// Prefer the external host resolved by the gateway so the token issuer
+			// matches the host used by clients.
+			String serverName = request.getHeader("X-Issuer-Name");
+			if (!StringUtils.hasText(serverName)) {
+				serverName = request.getServerName();
+			}
 			if (StringUtils.hasText(serverName)) {
 				serverName = serverName.toLowerCase();
 			}
@@ -80,7 +81,7 @@ public class AdminService {
 							// Do not accept the recipient from the login request.
 							loginNotificationService.sendLoginSuccessEmail(
 									user.getEmail(),
-									username,
+									user.getUsername(),
 									user.getLoginDt().atZone(ZoneId.systemDefault()).toInstant());
 
 						} catch (TaskRejectedException ex) {

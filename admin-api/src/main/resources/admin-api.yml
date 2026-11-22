@@ -50,7 +50,7 @@ app:
 # OpenAPI contract exposure for consumers and tooling
 springdoc:
   api-docs:
-    path: /auth/users/v3/api-docs  # OpenAPI JSON endpoint
+    path: /admin/users/v3/api-docs  # OpenAPI JSON endpoint
 
   swagger-ui:
     enabled: false  # Disabled in production for security
@@ -100,11 +100,22 @@ logging:
     max-history: 10
     # Log rotation strategy for disk protection
 
+
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 10
+      # Log rotation strategy for disk protection
+
+
   level:
     root: INFO
     "[com.netflix.discovery.DiscoveryClient]": ERROR
     "[org.springframework.jdbc.core.JdbcTemplate]": WARN
     "[com.cinematography.adminapi]": INFO
+    "[com.cinematography.core]": INFO
+    "[com.cinematography.web]": INFO
+    "[com.cinematography.cust]": INFO
     # Package-level log noise control
 
   pattern:

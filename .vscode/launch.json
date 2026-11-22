@@ -2,6 +2,27 @@
     "configurations": [
         {
             "type": "java",
+            "name": "SecurityKeyGenerator",
+            "request": "launch",
+            "mainClass": "com.cinematography.adminapi.cinematography.util.SecurityKeyGenerator",
+            "projectName": "admin-api"
+        },
+        {
+            "type": "java",
+            "name": "SaltGenerator",
+            "request": "launch",
+            "mainClass": "com.cinematography.adminapi.cinematography.util.SaltGenerator",
+            "projectName": "admin-api"
+        },
+        {
+            "type": "java",
+            "name": "JwtSecretConverter",
+            "request": "launch",
+            "mainClass": "com.cinematography.adminapi.cinematography.util.JwtSecretConverter",
+            "projectName": "admin-api"
+        },
+        {
+            "type": "java",
             "name": "PasswordUtil",
             "request": "launch",
             "mainClass": "com.cinematography.adminapi.cinematography.util.PasswordUtil",
