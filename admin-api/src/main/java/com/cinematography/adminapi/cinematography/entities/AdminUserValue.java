@@ -1,16 +1,14 @@
 package com.cinematography.adminapi.cinematography.entities;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
-
-@Data 
+@Data
 @Builder
-@Entity 
-@NoArgsConstructor 
-@AllArgsConstructor 
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "users")
 public class AdminUserValue {
 	@Id
@@ -64,4 +62,19 @@ public class AdminUserValue {
 	private String createdBy;
 	@Column(name = "modified_by", columnDefinition = "varchar(50)")
 	private String modifiedBy;
+
+	@Column(name = "password_changed_dt")
+	private LocalDateTime passwordChangedDt;
+
+	@Builder.Default
+	@Column(name = "expiry_15_days_email_sent", nullable = false)
+	private boolean expiry15DaysEmailSent = false;
+
+	@Builder.Default
+	@Column(name = "expiry_7_days_email_sent", nullable = false)
+	private boolean expiry7DaysEmailSent = false;
+
+	@Builder.Default
+	@Column(name = "expiry_email_sent", nullable = false)
+	private boolean expiryEmailSent = false;
 }

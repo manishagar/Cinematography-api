@@ -6,8 +6,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: manishag2006@gmail.com
-    password: ${MAIL_PASSWORD:}
+    username: manishag2006
+    password: cljuqytnnnfnizrz
     properties:
       mail:
         smtp:
@@ -46,6 +46,12 @@ spring:
 app:
   mail:
     from: ${MAIL_FROM:${spring.mail.username}}
+  password:
+    expiration-days: 90
+    first-reminder-days: 15
+    second-reminder-days: 7
+    scheduler-cron: "0 0 * * * *"
+    scheduler-zone: Asia/Kolkata
 
 # OpenAPI contract exposure for consumers and tooling
 springdoc:

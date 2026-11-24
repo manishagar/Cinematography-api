@@ -27,6 +27,28 @@ CREATE TABLE [users](
     CONSTRAINT PK_users primary key(user_id))
 GO
 
+ALTER TABLE dbo.users
+ADD password_changed_dt DATETIME2(6) NULL,
+
+    expiry_15_days_email_sent BIT NOT NULL
+        CONSTRAINT DF_users_expiry_15_days DEFAULT (0),
+
+    expiry_7_days_email_sent BIT NOT NULL
+        CONSTRAINT DF_users_expiry_7_days DEFAULT (0),
+
+    expiry_email_sent BIT NOT NULL
+        CONSTRAINT DF_users_expiry_email DEFAULT (0);
+GO
+
+
+UPDATE dbo.users
+SET expiry = DATEADD(DAY, 90, SYSUTCDATETIME()),
+    expiry_15_days_email_sent = 0,
+    expiry_7_days_email_sent = 0,
+    expiry_email_sent = 0
+WHERE status = 'ACTIVE';
+GO
+
 -- Run in your application database
 
 IF OBJECT_ID(N'dbo.Banners', N'U') IS NULL

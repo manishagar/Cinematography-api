@@ -2,18 +2,23 @@ package com.cinematography.adminapi.cinematography.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.cinematography.adminapi.cinematography.dtos.ApiResponseCode;
+import com.cinematography.adminapi.cinematography.dtos.ChangePasswordDetails;
 import com.cinematography.adminapi.cinematography.entities.AdminUserValue;
 import com.cinematography.adminapi.cinematography.repository.AdminUserRepository;
+import com.cinematography.adminapi.exception.PasswordExpiryException;
 import com.cinematography.cust.service.EncryptionService;
 import com.cinematography.cust.service.JwtService;
 
@@ -31,80 +36,145 @@ public class AdminService {
 	private final AdminUserRepository adminUserRepository;
 	@Value("${microservice.security.salt}")
 	private String salt;
+	@Value("${app.password.expiration-days:90}")
+	private int passwordExpirationDays;
 	private final JwtService jwtService;
 	private final LoginNotificationService loginNotificationService;
 
-	public String findUsersByUP(String username, String password, HttpServletRequest request) {
+	public String findUsersByUP(
+			String username,
+			String password,
+			HttpServletRequest request) {
+
 		String encryptPassword = EncryptionService.encrypt(password, salt);
 
 		String token = null;
-		Optional<AdminUserValue> findUsersByUP = Optional.empty();
 
 		try {
-			// Prefer the external host resolved by the gateway so the token issuer
-			// matches the host used by clients.
+
 			String serverName = request.getHeader("X-Issuer-Name");
+
 			if (!StringUtils.hasText(serverName)) {
 				serverName = request.getServerName();
 			}
+
 			if (StringUtils.hasText(serverName)) {
 				serverName = serverName.toLowerCase();
 			}
-			log.info("UsersService ServerName ::::::::::: {} ", serverName);
-			// Base claims
+
+			log.info("UsersService ServerName ::::::::::: {}",
+					serverName);
+
 			Map<String, Object> claims = new HashMap<>();
+
 			claims.put("typ", "JWT");
 			claims.put("iss", serverName);
 			claims.put("username", username);
 
-			// Fetch user by username
-			findUsersByUP = adminUserRepository.findUsersByUserName(username);
+			Optional<AdminUserValue> findUsersByUP = adminUserRepository.findUsersByUserName(username);
 
-			if (findUsersByUP.isPresent()) {
-				AdminUserValue user = findUsersByUP.get();
-				String stored = user.getPassword();
+			if (findUsersByUP.isEmpty()) {
 
-				boolean matchEncrypted = encryptPassword.equals(stored);
+				log.warn("No active user found for username '{}'",
+						username);
 
-				if (matchEncrypted) {
-					// Common claims for successful auth
-					claims.put(ApiResponseCode.EMAILID, user.getEmail());
-
-					if (user.getStatus().equals(ApiResponseCode.ACTIVE)) {
-
-						// Update login timestamp only on success
-						user.setLoginDt(LocalDateTime.now(ZoneId.systemDefault()));
-						adminUserRepository.save(user);
-
-						try {
-							// Use the email saved against the authenticated user.
-							// Do not accept the recipient from the login request.
-							loginNotificationService.sendLoginSuccessEmail(
-									user.getEmail(),
-									user.getUsername(),
-									user.getLoginDt().atZone(ZoneId.systemDefault()).toInstant());
-
-						} catch (TaskRejectedException ex) {
-							// A full email queue must not cause login to fail.
-							log.warn(
-									"Login succeeded but email could not be queued for '{}'",
-									username,
-									ex);
-						}
-
-						// Generate JWT
-						token = jwtService.generateToken(username, claims);
-					}
-				} else {
-					// Password mismatch
-					log.warn("Authentication failed for user '{}': password mismatch", username);
-					// token remains null; you might throw a custom exception instead
-				}
-			} else {
-				log.warn("No user found for username '{}'", username);
+				return null;
 			}
-		} catch (Exception e) {
-			log.error("UserService findUsersByUP, Unable to generate token ::::", e.getMessage());
+
+			AdminUserValue user = findUsersByUP.get();
+
+			String stored = user.getPassword();
+
+			boolean matchEncrypted = encryptPassword.equals(stored);
+
+			if (!matchEncrypted) {
+
+				log.warn("Authentication failed for user '{}'",
+						username);
+
+				return null;
+			}
+
+			if (!ApiResponseCode.ACTIVE.equals(user.getStatus())) {
+				return null;
+			}
+
+			// Password expiration validation
+			// Password expiration validation
+			LocalDateTime currentDateTime = LocalDateTime.now(ZoneOffset.UTC);
+
+			LocalDateTime passwordExpiryDate = user.getExpiry();
+
+			log.info("Password expiry validation started");
+
+			log.info("Username: {}", user.getUsername());
+
+			log.info("Current UTC date time: {}", currentDateTime);
+
+			log.info("Password expiry date: {}", passwordExpiryDate);
+
+			boolean passwordExpired = passwordExpiryDate == null
+					|| !passwordExpiryDate.isAfter(currentDateTime);
+
+			log.info("Is password expired: {}", passwordExpired);
+
+			if (passwordExpired) {
+
+				log.warn(
+						"Password expired for user: {}",
+						user.getUsername());
+
+				throw new PasswordExpiryException(
+						"Your password has expired. "
+								+ "Please change your password.");
+			}
+
+			log.info("Password expiry validation successful");
+
+			// Common claims for successful authentication
+			claims.put(ApiResponseCode.EMAILID, user.getEmail());
+
+			// Update successful login timestamp
+			user.setLoginDt(
+					LocalDateTime.now(ZoneId.systemDefault()));
+
+			adminUserRepository.save(user);
+
+			try {
+
+				loginNotificationService.sendLoginSuccessEmail(
+						user.getEmail(),
+						user.getUsername(),
+						user.getLoginDt()
+								.atZone(ZoneId.systemDefault())
+								.toInstant());
+
+			} catch (TaskRejectedException ex) {
+
+				log.warn(
+						"Login succeeded but email could not "
+								+ "be queued for '{}'",
+						username,
+						ex);
+			}
+
+			// Generate JWT only if password is valid
+			token = jwtService.generateToken(username, claims);
+
+		} catch (PasswordExpiryException ex) {
+
+			// Do not suppress the password expiration exception
+			throw ex;
+
+		} catch (Exception ex) {
+
+			log.error(
+					"UserService findUsersByUP: "
+							+ "Unable to generate token",
+					ex);
+
+			throw new IllegalStateException(
+					"Unable to process login.", ex);
 		}
 
 		return token;
@@ -142,6 +212,39 @@ public class AdminService {
 		}
 
 		return isFlag;
+	}
+
+	public AdminUserValue getChangePassword(ChangePasswordDetails changePasswordDetails) {
+
+		// Retrieve the existing user based on the supplied username. If no matching
+		// user is found, throw an IllegalArgumentException.
+		AdminUserValue user = adminUserRepository.findUsersByUserName(changePasswordDetails.getUsername())
+				.orElseThrow(() -> new IllegalArgumentException("username: not found"));
+
+		LocalDateTime currentDateTime = LocalDateTime.now(ZoneOffset.UTC);
+
+		// Keep the password hash used by existing consumers.
+		byte[] securePassword = EncryptionService.hash(changePasswordDetails.getPassword().toCharArray(),
+				salt.getBytes());
+		String hashCode = Base64.getEncoder().encodeToString(securePassword);
+		user.setHash(hashCode);
+
+		user.setPassword(
+				EncryptionService.encrypt(
+						changePasswordDetails.getPassword(),
+						salt));
+		user.setSalt(salt);
+		user.setPasswordChangedDt(currentDateTime);
+		user.setExpiry(currentDateTime.plusDays(passwordExpirationDays));
+		user.setExpiry15DaysEmailSent(false);
+		user.setExpiry7DaysEmailSent(false);
+		user.setExpiryEmailSent(false);
+		user.setUpdatedDt(currentDateTime);
+		user.setModifiedBy(user.getUsername());
+
+		adminUserRepository.save(user);
+
+		return user;
 	}
 
 }

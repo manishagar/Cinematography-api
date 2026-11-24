@@ -6,6 +6,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableAspectJAutoProxy
 @SpringBootApplication(scanBasePackages = {
@@ -16,6 +17,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan(basePackages = { "com.cinematography.adminapi", "com.cinematography.cust" })
 @EnableJpaRepositories(basePackages = { "com.cinematography.adminapi", "com.cinematography.cust" })
 @EnableDiscoveryClient
+@EnableScheduling
 public class AdminApiApplication {
 	public static void main(String[] args) {
         new SpringApplicationBuilder(AdminApiApplication.class)
