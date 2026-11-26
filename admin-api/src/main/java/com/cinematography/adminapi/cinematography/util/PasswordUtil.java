@@ -1,6 +1,6 @@
 package com.cinematography.adminapi.cinematography.util;
 
-import com.cinematography.cust.service.EncryptionService;
+import com.cinematography.adminapi.cinematography.util.EncryptionService;
 
 public class PasswordUtil {
     public static void main(String[] args) {
