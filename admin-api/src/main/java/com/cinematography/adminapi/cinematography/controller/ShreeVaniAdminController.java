@@ -1,6 +1,7 @@
 package com.cinematography.adminapi.cinematography.controller;
 
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -27,6 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.cinematography.adminapi.cinematography.dtos.ApiResponseCode;
 import com.cinematography.adminapi.cinematography.dtos.BannerDetails;
 import com.cinematography.adminapi.cinematography.dtos.ChangePasswordDetails;
+import com.cinematography.adminapi.cinematography.dtos.ExpiredPasswordChangeRequest;
+import com.cinematography.adminapi.cinematography.dtos.FolderContentDetails;
+import com.cinematography.adminapi.cinematography.dtos.FolderDetails;
 import com.cinematography.adminapi.cinematography.entities.AdminUserValue;
 import com.cinematography.adminapi.exception.PasswordExpiryException;
 import com.cinematography.core.constants.CommonResponseCodes;
@@ -340,4 +344,285 @@ public class ShreeVaniAdminController {
 		// Validate and parse the token using jwtUtil
 		return infra.getJwtUtil().validateToken(authorizationHeader);
 	}
+
+	    @Observed
+    @PutMapping(value = "/user/changeExpiredPassword", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<String>> changeExpiredPassword(@RequestBody ExpiredPasswordChangeRequest details) {
+        return updateExpiredPassword(details);
+    }
+
+    private ResponseEntity<ApiResponse<String>> updateExpiredPassword(ExpiredPasswordChangeRequest details) {
+		ApiResponse<AdminUserValue> apiRes = new ApiResponse<>();
+        List<String> messages = new ArrayList<>();
+		Errors errors = new BeanPropertyBindingResult(details, "expiredPassword");
+
+		adminValidatorBundle.expiredPasswordValidator.validate(details, errors);
+
+		if (errors.hasErrors()) {
+			log.error("AdminController changePassword validation error {} ", errors.getAllErrors());
+
+			List<String> errorMessages = errors.getAllErrors().stream().map(error -> {
+				if (error instanceof FieldError fieldError) {
+					return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+				} else {
+					return error.getObjectName() + ": " + error.getDefaultMessage();
+				}
+			}).toList();
+
+			messages.addAll(errorMessages);
+			apiRes.setMessages(messages);
+			apiRes.setStatus(CommonResponseCodes.ERROR);
+			apiRes.setStatusCode(CommonResponseCodes.ERROR_CODE);
+			return new ResponseEntity<>(ApiResponse.error(apiRes.getMessages(), HttpStatus.BAD_REQUEST),
+					HttpStatus.BAD_REQUEST);
+		}
+        try {
+            AdminUserValue user = adminServiceBundle.adminService.changeExpiredPassword(details);
+            try {
+                if (StringUtils.hasText(user.getEmail())) {
+                    String name = ((user.getName() == null ? "" : user.getName()) + " " + (user.getSurname() == null ? "" : user.getSurname())).trim();
+                    adminServiceBundle.emailService.sendPasswordChangedEmail(user.getEmail(), name.isBlank() ? "User" : name, user.getUsername());
+                }
+            } catch (Exception ex) {
+                log.error("Password changed but notification failed", ex);
+            }
+            messages.add("Password changed successfully.");
+            return ResponseEntity.ok(ApiResponse.success("Password changed successfully.", messages, HttpStatus.OK));
+        } catch (IllegalArgumentException ex) {
+            messages.add(ex.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(messages, HttpStatus.BAD_REQUEST));
+        } catch (Exception ex) {
+            log.error("Password change failed", ex);
+            messages.add("Unable to change password. Please try again.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(messages, HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+	 @Observed
+    @Tag(
+        name = "folder-management",
+        description = "Operations about folder management"
+    )
+    @PostMapping(
+        value = "/folders",
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ApiResponse<FolderDetails>> createFolder(
+            @RequestBody FolderDetails folderDetails,
+            Principal principal) {
+
+        log.info("FileManagementController createFolder invoked");
+
+        ApiResponse<FolderDetails> apiRes = new ApiResponse<>();
+
+        List<String> messages = new ArrayList<>();
+
+        Errors errors = new BeanPropertyBindingResult(
+                folderDetails, "folderDetails");
+
+        folderDetails.setFolderId(null);
+
+        adminValidatorBundle.foldersValidator.validate(
+                folderDetails, errors);
+
+        if (errors.hasErrors()) {
+
+            List<String> errorMessages = errors.getAllErrors()
+                    .stream()
+                    .map(error -> {
+
+                        if (error instanceof FieldError fieldError) {
+
+                            return fieldError.getField()
+                                    + ": "
+                                    + fieldError.getDefaultMessage();
+                        }
+
+                        return error.getObjectName()
+                                + ": "
+                                + error.getDefaultMessage();
+
+                    }).toList();
+
+            messages.addAll(errorMessages);
+
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(
+                            messages,
+                            HttpStatus.BAD_REQUEST));
+        }
+
+        try {
+
+            FolderDetails response =
+                    adminServiceBundle.fileManagementService
+                            .createFolder(
+                                    folderDetails,
+                                    principal.getName());
+
+            if (response != null) {
+
+                apiRes.setData(response);
+
+                apiRes.setStatus(CommonResponseCodes.SUCCESS);
+
+                messages.add("Folder created successfully.");
+
+            } else {
+
+                apiRes.setStatus(CommonResponseCodes.WARNING);
+
+                messages.add("Unable to create folder.");
+            }
+
+        } catch (IllegalArgumentException ex) {
+
+            messages.add(ex.getMessage());
+
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(
+                            messages,
+                            HttpStatus.BAD_REQUEST));
+
+        } catch (Exception ex) {
+
+            log.error(
+                    "FileManagementController createFolder error",
+                    ex);
+
+            messages.add("Unable to process create folder request.");
+
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(
+                            messages,
+                            HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+
+        if (CommonResponseCodes.SUCCESS.equalsIgnoreCase(
+                apiRes.getStatus())) {
+
+            return new ResponseEntity<>(
+                    ApiResponse.success(
+                            apiRes.getData(),
+                            messages,
+                            HttpStatus.OK),
+                    HttpStatus.OK);
+
+        } else if (CommonResponseCodes.WARNING.equalsIgnoreCase(
+                apiRes.getStatus())) {
+
+            return new ResponseEntity<>(
+                    ApiResponse.warning(
+                            apiRes.getData(),
+                            messages,
+                            HttpStatus.OK),
+                    HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(
+                ApiResponse.empty(),
+                HttpStatus.OK);
+    }
+
+    @Observed
+    @Tag(
+        name = "folder-management",
+        description = "Operations about folder management"
+    )
+    @GetMapping(
+        value = "/tree",
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ApiResponse<List<FolderDetails>>>
+            getAllFolders() {
+
+        log.info("FileManagementController getAllFolders invoked");
+
+        List<String> messages = new ArrayList<>();
+
+        try {
+
+            List<FolderDetails> folders =
+                    adminServiceBundle.fileManagementService
+                            .getAllFolders();
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(
+                            folders,
+                            messages,
+                            HttpStatus.OK));
+
+        } catch (Exception ex) {
+
+            log.error(
+                    "FileManagementController getAllFolders error",
+                    ex);
+
+            messages.add("Unable to retrieve folder details.");
+
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(
+                            messages,
+                            HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    @Observed
+    @Tag(
+        name = "file-management",
+        description = "Operations about file and folder management"
+    )
+    @GetMapping(
+        value = "/contents",
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ApiResponse<FolderContentDetails>>
+            getFolderContents(
+                    @RequestParam(required = false) Long folderId) {
+
+        log.info(
+                "FileManagementController getFolderContents {}",
+                folderId);
+
+        List<String> messages = new ArrayList<>();
+
+        try {
+
+            FolderContentDetails details =
+                    adminServiceBundle.fileManagementService
+                            .getFolderContents(folderId);
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(
+                            details,
+                            messages,
+                            HttpStatus.OK));
+
+        } catch (IllegalArgumentException ex) {
+
+            messages.add(ex.getMessage());
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(
+                            messages,
+                            HttpStatus.NOT_FOUND));
+
+        } catch (Exception ex) {
+
+            log.error(
+                    "FileManagementController getFolderContents error",
+                    ex);
+
+            messages.add("Unable to retrieve folder contents.");
+
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(
+                            messages,
+                            HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+    }
 }

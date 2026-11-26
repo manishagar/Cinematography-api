@@ -124,3 +124,92 @@ BEGIN
     );
 END;
 GO
+
+
+
+
+IF OBJECT_ID(N'Folders', N'U') IS NULL
+BEGIN
+
+    CREATE TABLE Folders (
+
+        folder_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+        parent_folder_id BIGINT NULL,
+
+        folder_name NVARCHAR(255) NOT NULL,
+
+        description NVARCHAR(1000) NULL,
+
+        language_code VARCHAR(10) NOT NULL DEFAULT 'en',
+
+        status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+
+        created_by NVARCHAR(255) NOT NULL,
+
+        created_dt DATETIME2 NOT NULL
+            DEFAULT SYSUTCDATETIME(),
+
+        modified_by NVARCHAR(255) NULL,
+
+        updated_dt DATETIME2 NULL,
+
+        CONSTRAINT FK_Folders_Parent
+            FOREIGN KEY (parent_folder_id)
+            REFERENCES Folders(folder_id),
+
+        CONSTRAINT CK_Folders_Status
+            CHECK (status IN ('ACTIVE', 'DELETED'))
+    );
+
+    CREATE UNIQUE INDEX UX_Folders_Active_Name
+    ON Folders(parent_folder_id, folder_name)
+    WHERE status = 'ACTIVE';
+
+END;
+GO
+
+IF OBJECT_ID(N'Files', N'U') IS NULL
+BEGIN
+
+    CREATE TABLE Files (
+
+        file_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+
+        folder_id BIGINT NULL,
+
+        file_name NVARCHAR(255) NOT NULL,
+
+        file_path NVARCHAR(2000) NOT NULL,
+
+        file_size BIGINT NOT NULL,
+
+        content_type VARCHAR(255) NULL,
+
+        status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+
+        created_by NVARCHAR(255) NOT NULL,
+
+        created_dt DATETIME2 NOT NULL
+            DEFAULT SYSUTCDATETIME(),
+
+        modified_by NVARCHAR(255) NULL,
+
+        updated_dt DATETIME2 NULL,
+
+        CONSTRAINT FK_Files_Folders
+            FOREIGN KEY (folder_id)
+            REFERENCES Folders(folder_id),
+
+        CONSTRAINT CK_Files_Status
+            CHECK (status IN ('ACTIVE', 'DELETED')),
+
+        CONSTRAINT CK_Files_Size
+            CHECK (file_size >= 0)
+    );
+
+    CREATE INDEX IX_Files_Folder
+    ON Files(folder_id, status);
+
+END;
+GO

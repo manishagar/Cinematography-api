@@ -95,12 +95,14 @@ public class AuthenticationFilter implements GatewayFilter, Ordered {
         boolean isSecured = routeValidator.isSecured(serverHttpRequest);
 
         if (!isAdminSecured && !isSecured) {
+            if (routeValidator.isExpiredPasswordRequest(serverHttpRequest)) {
+                log.debug("Forwarding expired-password request for current-password verification");
+            }
             return handlePublic(finalExchange, chain);
         }
 
-        return isAdminSecured
-                ? handleAdmin(finalExchange, chain, issuerName, apiResponse, messages)
-                : null;
+        // All remaining secured requests must pass authentication.
+        return handleAdmin(finalExchange, chain, issuerName, apiResponse, messages);
     }
 
     /*

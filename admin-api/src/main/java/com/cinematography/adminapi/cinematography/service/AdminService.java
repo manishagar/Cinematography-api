@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 
 import com.cinematography.adminapi.cinematography.dtos.ApiResponseCode;
 import com.cinematography.adminapi.cinematography.dtos.ChangePasswordDetails;
+import com.cinematography.adminapi.cinematography.dtos.ExpiredPasswordChangeRequest;
 import com.cinematography.adminapi.cinematography.entities.AdminUserValue;
 import com.cinematography.adminapi.cinematography.repository.AdminUserRepository;
 import com.cinematography.adminapi.exception.PasswordExpiryException;
@@ -246,5 +247,41 @@ public class AdminService {
 
 		return user;
 	}
+
+	    @Transactional
+    public AdminUserValue changeExpiredPassword(ExpiredPasswordChangeRequest details) {
+        return updateExpiredPassword(details);
+    }
+
+    private AdminUserValue updateExpiredPassword(ExpiredPasswordChangeRequest details) {
+        if (details == null || !StringUtils.hasText(details.getUsername()) || !StringUtils.hasText(details.getConfirmPassword())) {
+            throw new IllegalArgumentException("currentPassword: Invalid credentials.");
+        }
+        AdminUserValue user = adminUserRepository.findByAdminIdForUpdate(details.getUsername())
+            .filter(u -> ApiResponseCode.ACTIVE.equals(u.getStatus()))
+            .orElseThrow(() -> new IllegalArgumentException("currentPassword: Invalid credentials."));
+        if (!EncryptionService.encrypt(details.getCurrentPassword(), salt).equals(user.getPassword())) {
+            throw new IllegalArgumentException("currentPassword: Invalid credentials.");
+        }
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        if (user.getExpiry() == null || user.getExpiry().isAfter(now)) {
+            throw new IllegalArgumentException("Password is not expired. Please sign in.");
+        }
+      byte[] securePassword = EncryptionService.hash(details.getPassword().toCharArray(),
+				salt.getBytes());
+		String hashCode = Base64.getEncoder().encodeToString(securePassword);
+		user.setHash(hashCode);
+
+
+		user.setSalt(salt);
+        user.setPasswordChangedDt(now);
+        user.setExpiry(now.plusDays(passwordExpirationDays));
+        user.setExpiry15DaysEmailSent(false);
+        user.setExpiry7DaysEmailSent(false);
+        user.setExpiryEmailSent(false);
+        user.setUpdatedDt(now);
+        user.setModifiedBy(user.getUsername());
+        return adminUserRepository.save(user);
+    }
 
 }

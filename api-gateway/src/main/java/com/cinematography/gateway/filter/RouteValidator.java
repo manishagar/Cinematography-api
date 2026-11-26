@@ -3,6 +3,7 @@ package com.cinematography.gateway.filter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -14,6 +15,14 @@ public class RouteValidator {
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private static final String ADMIN_PATH_PATTERN = "/admin/users/admin/**";
+
+    public static final String EXPIRED_PASSWORD_PATH =
+            "/admin/users/admin/user/changeExpiredPassword";
+
+    public boolean isExpiredPasswordRequest(ServerHttpRequest request) {
+        return HttpMethod.PUT.equals(request.getMethod())
+                && EXPIRED_PASSWORD_PATH.equals(request.getURI().getRawPath());
+    }
 
     // Admin public endpoints (no authentication needed)
     public static final String ADMIN_API_DOCS = "/admin/users/v3/api-docs";
@@ -51,6 +60,9 @@ public class RouteValidator {
     }
 
     public boolean isSecuredAdminRequest(String path) {
+        if (EXPIRED_PASSWORD_PATH.equals(path)) {
+            return true; // Path-only checks cannot grant a method-specific exception.
+        }
         return PATH_MATCHER.match(ADMIN_PATH_PATTERN, path)
                 && publicAdminPaths.stream().noneMatch(publicPath -> PATH_MATCHER.match(publicPath, path));
     }
@@ -62,6 +74,9 @@ public class RouteValidator {
      * - It is not in the open endpoints list.
      */
     public boolean isSecured(ServerHttpRequest request) {
+        if (isExpiredPasswordRequest(request)) {
+            return false;
+        }
         String path = request.getURI().getPath();
 
         // Admin security rule overrides open list logic if it is an admin secured
@@ -79,6 +94,9 @@ public class RouteValidator {
      * Admin-only check.
      */
     public boolean isSecuredAdmin(ServerHttpRequest request) {
+        if (isExpiredPasswordRequest(request)) {
+            return false;
+        }
         return isSecuredAdminRequest(request.getURI().getPath());
     }
 

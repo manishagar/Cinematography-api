@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.cinematography.adminapi.cinematography.service.AdminService;
 import com.cinematography.adminapi.cinematography.service.EmailService;
+import com.cinematography.adminapi.cinematography.service.FileManagementService;
 import com.cinematography.cust.service.JwtService;
 
 import lombok.RequiredArgsConstructor;
@@ -17,5 +18,7 @@ public class AdminServiceBundle {
     public final JwtService jwtService;
 
     public final EmailService emailService;
+
+    public  final FileManagementService fileManagementService;
 
 }
