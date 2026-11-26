@@ -1,0 +1,61 @@
+# Server networking, TLS termination, and embedded container configuration
+server:
+  port: 8082  # HTTPS listener port for the service
+
+  ssl:
+    enabled: true
+    key-store: file:D:/dev/cinematography-config/cinematography-all.p12
+    key-store-password: CineApis@2026
+    key-store-type: pkcs12
+    key-alias: cinematography-all
+    key-password: CineApis@2026
+    # TLS configuration for encrypted client communication
+
+# Database connectivity and persistence configuration
+spring:
+  datasource:
+    url: 'jdbc:sqlserver://localhost:1433;databaseName=CinematographyDB;encrypt=true;trustServerCertificate=true'
+    username: cinematography_admin
+    password: Manishag@2026
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    # Primary SQL Server datasource
+
+    hikari:
+      allow-pool-suspension: true
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      # Production-tuned connection pooling for reliability and fast failure
+
+  jpa:
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    # ORM behavior with no schema mutation and no SQL logging
+
+# Application-level security configuration
+microservice:
+  security:
+    salt: wzebxmci9caz3lyy9sdllj9l5ipsxc
+
+    jwt:
+      secret-key: e4f90d05c35026c42b006bffba9f85f4442733e29cd804e172dc9196afe98cc73a5ffd4ef8d9dabc6e0372acf22837b07a631050c1d903a04368606cf3ea8de0b6276c500b0d1274fccc986ca3997d2c088ac0743477b2b0ff874bc94d57b101bb77f1ffb3be7284497213af15bb7264b2de5c58c4a72308b7cfdece1890ba5b4e4eb283d887d06695c11dfabbc7da007f69ce4e1ecbf5e292f68315c545db5e51bad2e6efdef14466195241f8124565f93aabc7215aabdb3b7c4655c1e23b3feb86f17157ae9739a2dd30f5f13df0c50e9d1fdb3f288f0befa9b6c1d0abce37f43acaa5f136711b6009296d4a8a369bea81e11db49766f1fea987b78cb667df4ff3b0882e5d5062bcb4b1229561b7ad24220949dd63e62703775c1ee5ed53582cfa647b0b62590e0aa02dd1a70a94290ce3cb3f41ffbc333ca47d824895843eb1c5d86a102345a3976326290925d7b1b84f317375088a898290dd791a01abcd5852f25c3c6cc9f1ae250f8db06abb351e94867168723573d3f439d7c57106218c9e8ed88228e6c4e6f21d936c4354189f4d9b8be0fda6fc58012b9cd3a78865af8f43dcdee7827b7f1f90e1dd5ad5fa5a0044cfd86f8fca43870609e398e30bb355b7feee26457fc624032b3f09a8f4ea60fc9d41ed1f1f2d4b245120708129fc201e887b229ade6946c13be71f7d391b4f0e57265143a4525ea609978f11ef
+      expiration-time: 3600000
+      # JWT signing secret (must be externalized in secure stores for production)
+
+# Service discovery and registration configuration
+eureka:
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+    ip-address: 192.168.0.104
+    securePortEnabled: true
+    nonSecurePortEnabled: false
+    # Instance identity and secure registration settings
+
+  client:
+    serviceUrl:
+      defaultZone: http://${eureka.instance.hostname}:8761/eureka/
+      # Eureka server endpoint for service registration

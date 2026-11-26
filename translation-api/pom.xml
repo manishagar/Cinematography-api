@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+	  Inherit dependency and plugin management from the parent POM.
+	  All versions for Spring Boot, Spring Cloud, JJWT, HttpClient5, etc.
+	  are managed centrally in the parent.
+	-->
+
+    <parent>
+        <groupId>com.cinematography</groupId>
+        <artifactId>cinematography</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <!-- Module coordinates -->
+    <groupId>com.cinematography</groupId>
+    <artifactId>translation-api</artifactId>
+    <name>TRANSLATION-API</name>
+    <description>Translation Language Converter service</description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.cinematography</groupId>
+            <artifactId>cinematography-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cinematography</groupId>
+            <artifactId>cinematography-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cinematography</groupId>
+            <artifactId>cinematography-cust</artifactId>
+        </dependency>
+        <!-- OpenAPI JSON generation only; Swagger UI intentionally excluded in production -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+        </dependency>
+        <!-- Spring Boot Web (MVC stack) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- SQL Server JDBC driver -->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Spring Data JPA -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- JSR-305 annotations (Nullable, NonNull, etc.) -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
+
+        <!-- Lombok (recommended for entities + DTOs) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Repository tests (@DataJpaTest) on an in-memory H2 database; test scope only -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <!-- Build plugins (inherits versions from parent) -->
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+
+            <!-- Spring Boot plugin: used to create executable JARs -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

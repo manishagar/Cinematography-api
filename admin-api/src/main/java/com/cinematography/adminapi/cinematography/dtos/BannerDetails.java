@@ -1,7 +1,5 @@
 package com.cinematography.adminapi.cinematography.dtos;
 
-import java.time.LocalDateTime;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

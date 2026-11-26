@@ -94,6 +94,11 @@
         <artifactId>cinematography-cust</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.cinematography</groupId>
+        <artifactId>admin-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- OpenAPI JSON generation only; Swagger UI intentionally excluded in production -->
       <dependency>
@@ -526,6 +531,7 @@
     <!-- Services -->
     <module>service-registry</module>
     <module>admin-api</module>
+    <module>translation-api</module>
     <module>api-gateway</module>
   </modules>
 </project>
